@@ -15,6 +15,8 @@
       --lightgray: #e5e7eb;
       --border-radius: 13px;
       --shadow: 0 2px 10px #1a237e13;
+      --edit: #2dd4bf;
+      --edit-hover: #0891b2;
     }
     html, body {
       height: 100%;
@@ -66,7 +68,7 @@
       margin-bottom: 2px;
       box-sizing: border-box;
     }
-    form input:focus, form textarea:focus {
+    form input:focus, form textarea:focus, form select:focus {
       border-color: var(--primary);
       outline: none;
     }
@@ -112,6 +114,22 @@
     .btn[disabled] {
       opacity: 0.55;
       cursor: not-allowed;
+    }
+    .btn.edit {
+      background: var(--edit);
+      color: #fff;
+      border: none;
+      font-size: 0.98em;
+      padding: 5px 13px;
+      margin: 0;
+      margin-left: 6px;
+      margin-right: 1px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn.edit:hover {
+      background: var(--edit-hover);
     }
     .error {
       color: #e53935;
@@ -165,6 +183,10 @@
       padding: 28px 0 18px 0;
       font-size: 1.08em;
     }
+    .editing-row {
+      background: #e0eaff !important;
+      transition: background 0.2s;
+    }
   </style>
 </head>
 <body>
@@ -175,6 +197,7 @@
     </div>
     <div class="card">
       <form id="timeForm" autocomplete="off">
+        <input type="hidden" id="editId" name="editId" value="">
         <div class="form-row">
           <div class="form-col">
             <label for="date">Date *</label>
@@ -183,12 +206,12 @@
           </div>
           <div class="form-col">
             <label for="startTime">Start Time *</label>
-            <input type="time" id="startTime" name="startTime">
+            <select id="startTime" name="startTime"></select>
             <div class="error" id="error-startTime"></div>
           </div>
           <div class="form-col">
             <label for="endTime">End Time *</label>
-            <input type="time" id="endTime" name="endTime">
+            <select id="endTime" name="endTime"></select>
             <div class="error" id="error-endTime"></div>
           </div>
         </div>
@@ -213,6 +236,7 @@
         </div>
         <div class="form-actions">
           <button type="submit" class="btn" id="submitBtn">Add Time Entry</button>
+          <button type="button" class="btn secondary" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
         </div>
       </form>
     </div>
@@ -229,8 +253,33 @@
     </div>
   </div>
   <script>
+    // LocalStorage key
+    const LOCAL_STORAGE_KEY = 'timetracker_entries';
+
+    // Populate the start and end time selects with 5 min increments (00:00 - 23:55)
+    function populateTimeDropdown(selectId) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = "";
+      for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 5) {
+          const hour = h.toString().padStart(2, "0");
+          const min = m.toString().padStart(2, "0");
+          const labelH = ((h % 12) === 0 ? 12 : h % 12);
+          const label = `${labelH}:${min} ${h < 12 ? "AM" : "PM"}`;
+          const value = `${hour}:${min}`;
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          select.appendChild(option);
+        }
+      }
+    }
+    populateTimeDropdown("startTime");
+    populateTimeDropdown("endTime");
+
     // State
     let entries = [];
+    let editingId = null; // id of entry being edited
 
     // Elements
     const form = document.getElementById('timeForm');
@@ -238,6 +287,9 @@
     const entriesTableContainer = document.getElementById('entriesTableContainer');
     const detailCard = document.getElementById('detailCard');
     const detailContent = document.getElementById('detailContent');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const editIdInput = document.getElementById('editId');
 
     // Helper to escape HTML
     function escapeHTML(str) {
@@ -251,6 +303,25 @@
       if (!dateStr) return '';
       const [y, m, d] = dateStr.split('-');
       return `${m}/${d}/${y}`;
+    }
+
+    // Load from localStorage
+    function loadEntries() {
+      try {
+        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (data) {
+          entries = JSON.parse(data) || [];
+        } else {
+          entries = [];
+        }
+      } catch (e) {
+        entries = [];
+      }
+    }
+
+    // Save to localStorage
+    function saveEntries() {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(entries));
     }
 
     // Validation
@@ -284,7 +355,7 @@
         return;
       }
       exportBtn.disabled = false;
-      let rows = entries.map(entry => {
+      let rows = entries.map((entry, idx) => {
         // Duration calculation
         const start = new Date(`1970-01-01T${entry.startTime}`);
         const end = new Date(`1970-01-01T${entry.endTime}`);
@@ -293,14 +364,26 @@
         const diffHours = Math.floor(diffMs / 3600000);
         const diffMinutes = Math.floor((diffMs % 3600000) / 60000);
 
+        // Display time label as AM/PM
+        function timeLabel(t) {
+          let [h, m] = t.split(":").map(Number);
+          let labelH = ((h % 12) === 0 ? 12 : h % 12);
+          let ampm = h < 12 ? "AM" : "PM";
+          return `${labelH}:${m.toString().padStart(2,'0')} ${ampm}`;
+        }
+
+        const editingRowClass = (editingId === entry.id) ? "editing-row" : "";
         return `
-          <tr>
+          <tr class="${editingRowClass}">
             <td>${excelFriendlyDate(entry.date)}</td>
             <td>${escapeHTML(entry.task)}</td>
             <td>${escapeHTML(entry.description)}</td>
-            <td>${entry.startTime} - ${entry.endTime}</td>
+            <td>${timeLabel(entry.startTime)} - ${timeLabel(entry.endTime)}</td>
             <td>${diffHours > 0 ? diffHours + 'h ' : ''}${diffMinutes}m</td>
             <td>${escapeHTML(entry.notes)}</td>
+            <td>
+              <button class="btn edit" title="Edit" data-edit-id="${entry.id}">Edit</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -315,6 +398,7 @@
                 <th>Time</th>
                 <th>Duration</th>
                 <th>Notes</th>
+                <th style="width:50px;"></th>
               </tr>
             </thead>
             <tbody>
@@ -323,6 +407,15 @@
           </table>
         </div>
       `;
+
+      // Add event listeners for edit buttons
+      document.querySelectorAll('.btn.edit').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const id = btn.getAttribute('data-edit-id');
+          startEditEntry(id);
+        });
+      });
 
       renderDetail();
     }
@@ -334,16 +427,57 @@
         return;
       }
       const entry = entries[entries.length - 1];
+
+      function timeLabel(t) {
+        let [h, m] = t.split(":").map(Number);
+        let labelH = ((h % 12) === 0 ? 12 : h % 12);
+        let ampm = h < 12 ? "AM" : "PM";
+        return `${labelH}:${m.toString().padStart(2,'0')} ${ampm}`;
+      }
+
       detailCard.style.display = '';
       detailContent.innerHTML = `
         <div class="entry-detail">
           <h3>${escapeHTML(entry.task)}</h3>
           <div class="label">${excelFriendlyDate(entry.date)}</div>
-          <div><span class="label">Start:</span> ${entry.startTime} &nbsp; <span class="label">End:</span> ${entry.endTime}</div>
+          <div><span class="label">Start:</span> ${timeLabel(entry.startTime)} &nbsp; <span class="label">End:</span> ${timeLabel(entry.endTime)}</div>
           <div style="margin:7px 0 0 0;"><span class="label">Description:</span> ${escapeHTML(entry.description)}</div>
           ${entry.notes ? `<div style="margin:4px 0 0 0;"><span class="label">Notes:</span> ${escapeHTML(entry.notes)}</div>` : ""}
         </div>
       `;
+    }
+
+    // Start editing an entry
+    function startEditEntry(id) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+      editingId = id;
+      editIdInput.value = id;
+      form.date.value = entry.date;
+      form.startTime.value = entry.startTime;
+      form.endTime.value = entry.endTime;
+      form.task.value = entry.task;
+      form.description.value = entry.description;
+      form.notes.value = entry.notes || '';
+      submitBtn.textContent = "Update Entry";
+      cancelEditBtn.style.display = "";
+      renderTable();
+      // Scroll to form
+      form.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    // Cancel editing
+    cancelEditBtn.addEventListener('click', function() {
+      stopEdit();
+    });
+
+    function stopEdit() {
+      editingId = null;
+      editIdInput.value = "";
+      form.reset();
+      submitBtn.textContent = "Add Time Entry";
+      cancelEditBtn.style.display = "none";
+      renderTable();
     }
 
     // Handle form submit
@@ -352,8 +486,8 @@
       clearErrors();
       const formData = {
         date: form.date.value.trim(),
-        startTime: form.startTime.value.trim(),
-        endTime: form.endTime.value.trim(),
+        startTime: form.startTime.value,
+        endTime: form.endTime.value,
         task: form.task.value.trim(),
         description: form.description.value.trim(),
         notes: form.notes.value.trim(),
@@ -363,11 +497,26 @@
         setErrors(errors);
         return;
       }
-      entries.push({
-        ...formData,
-        id: Date.now().toString()
-      });
-      form.reset();
+      if (editingId) {
+        // Update existing entry
+        const idx = entries.findIndex(e => e.id === editingId);
+        if (idx !== -1) {
+          entries[idx] = {
+            ...entries[idx],
+            ...formData
+          };
+          saveEntries();
+          stopEdit();
+        }
+      } else {
+        // Add new entry
+        entries.push({
+          ...formData,
+          id: Date.now().toString()
+        });
+        saveEntries();
+        form.reset();
+      }
       renderTable();
     });
 
@@ -388,7 +537,8 @@
       document.body.removeChild(link);
     });
 
-    // Initial render
+    // Initial load
+    loadEntries();
     renderTable();
 
   </script>
