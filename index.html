@@ -9,16 +9,47 @@
   <style>
     :root {
       --primary: #5865f2;
+      --primary-dark: #818cf8;
       --bg: #f6f8fa;
       --white: #fff;
       --gray: #333;
       --lightgray: #e5e7eb;
-      --border-radius: 13px;
-      --shadow: 0 2px 10px #1a237e13;
+      --border-radius: 18px;
+      --shadow: 0 4px 28px #5865f218;
       --edit: #2dd4bf;
       --edit-hover: #0891b2;
       --delete: #f87171;
       --delete-hover: #ef4444;
+      --danger: #ef4444;
+      --accent: #f1f5f9;
+      --glass: rgba(255,255,255,0.74);
+      --table-header: #f4f6fc;
+      --table-row-even: #f8fafd;
+      --input-bg: #fafbfc;
+      --input-border: #dbeafe;
+      --btn-shadow: 0 2px 6px #5865f230;
+    }
+    html.dark {
+      --primary: #818cf8;
+      --primary-dark: #6366f1;
+      --bg: #181c23;
+      --white: #222738;
+      --gray: #e4e4e7;
+      --lightgray: #353945;
+      --border-radius: 18px;
+      --shadow: 0 4px 28px #1e293ba0;
+      --edit: #2dd4bf;
+      --edit-hover: #0891b2;
+      --delete: #f87171;
+      --delete-hover: #ef4444;
+      --danger: #ef4444;
+      --accent: #23263a;
+      --glass: rgba(34,39,56,0.82);
+      --table-header: #292e46;
+      --table-row-even: #23263a;
+      --input-bg: #232435;
+      --input-border: #353945;
+      --btn-shadow: 0 2px 6px #818cf830;
     }
     html, body {
       height: 100%;
@@ -28,51 +59,67 @@
       font-family: 'Roboto', system-ui, sans-serif;
       color: var(--gray);
       min-height: 100vh;
+      transition: background .3s,color .3s;
     }
     .container {
       max-width: 900px;
-      margin: 40px auto;
+      margin: 42px auto;
       padding: 20px;
+      transition: color .3s;
     }
     h1 {
       font-size: 2.3rem;
       margin-bottom: 8px;
       font-weight: 700;
       color: var(--primary);
+      letter-spacing: -0.5px;
     }
     .lead {
       color: #555;
       font-size: 1.07rem;
       margin-bottom: 28px;
+      letter-spacing: 0.01em;
+      opacity: .85;
     }
+    html.dark .lead { color: #b5b8c5; }
     .card {
-      background: var(--white);
+      background: var(--glass);
       border-radius: var(--border-radius);
       box-shadow: var(--shadow);
-      padding: 24px 28px 26px 28px;
+      padding: 28px 32px 26px 32px;
       margin-bottom: 32px;
+      border: 1.5px solid var(--lightgray);
+      backdrop-filter: blur(6px);
+      transition: background .3s, color .3s, border .3s;
     }
     form label {
       font-weight: 500;
       display: block;
       margin-bottom: 4px;
       margin-top: 10px;
+      letter-spacing: .01em;
+      color: var(--primary-dark);
     }
     form input, form textarea, form select {
       width: 100%;
-      border: 1px solid var(--lightgray);
-      border-radius: 7px;
+      border: 1.5px solid var(--input-border);
+      border-radius: 10px;
       font-family: inherit;
       font-size: 1rem;
-      padding: 8px 12px;
-      background: #fafbfc;
-      transition: border 0.18s;
+      padding: 10px 13px;
+      background: var(--input-bg);
+      transition: border 0.18s, background .3s, color .3s;
       margin-bottom: 2px;
       box-sizing: border-box;
+      color: var(--gray);
     }
     form input:focus, form textarea:focus, form select:focus {
       border-color: var(--primary);
       outline: none;
+      background: #fff;
+    }
+    html.dark form input:focus, html.dark form textarea:focus, html.dark form select:focus {
+      background: #23263a;
     }
     form textarea {
       min-height: 44px;
@@ -96,22 +143,25 @@
       text-align: right;
     }
     .btn {
-      background: var(--primary);
+      background: linear-gradient(100deg,var(--primary),var(--primary-dark));
       color: #fff;
       border: none;
-      border-radius: 7px;
-      font-size: 1.06rem;
+      border-radius: 9px;
+      font-size: 1.07rem;
       font-family: inherit;
-      padding: 9px 22px;
+      padding: 10px 23px;
       font-weight: 500;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.22s, box-shadow .22s, color .22s;
       margin-left: 0.5em;
+      box-shadow: var(--btn-shadow);
+      letter-spacing: .01em;
     }
     .btn.secondary {
-      background: #eaeefb;
-      color: #232323;
-      border: 1px solid #c3c9e7;
+      background: var(--accent);
+      color: var(--primary-dark);
+      border: 1.5px solid var(--primary-dark);
+      box-shadow: none;
     }
     .btn[disabled] {
       opacity: 0.55;
@@ -122,11 +172,10 @@
       color: #fff;
       border: none;
       font-size: 0.98em;
-      padding: 5px 13px;
+      padding: 6px 13px;
       margin: 0 3px 0 6px;
       border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.15s;
+      box-shadow: 0 2px 4px #00968818;
     }
     .btn.edit:hover {
       background: var(--edit-hover);
@@ -136,17 +185,16 @@
       color: #fff;
       border: none;
       font-size: 0.98em;
-      padding: 5px 13px;
+      padding: 6px 13px;
       margin: 0 0 0 3px;
       border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.15s;
+      box-shadow: 0 2px 4px #ef444418;
     }
     .btn.delete:hover {
       background: var(--delete-hover);
     }
     .error {
-      color: #e53935;
+      color: var(--danger);
       font-size: 0.93em;
       margin-bottom: 2px;
       margin-top: -2px;
@@ -156,25 +204,28 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 8px;
-      background: #fafdff;
+      background: transparent;
       border-radius: 10px;
       overflow: hidden;
     }
     th, td {
-      border: 1px solid #eef1f7;
+      border: 1px solid var(--lightgray);
       padding: 8px 10px;
       text-align: left;
+      background: transparent;
+      transition: background .3s;
     }
     th {
-      background: #f4f6fc;
+      background: var(--table-header);
       font-weight: 500;
     }
     tr:nth-child(even) td {
-      background: #f8fafd;
+      background: var(--table-row-even);
     }
     .table-scroll {
       overflow-x: auto;
       border-radius: 10px;
+      background: transparent;
     }
     @media (max-width: 700px) {
       .container { padding: 4px;}
@@ -183,31 +234,75 @@
       .form-col { min-width: 80px;}
     }
     .entry-detail {
-      background: #f7faff;
-      border-radius: 9px;
-      padding: 14px 12px;
-      margin-top: 11px;
-      font-size: 1.04em;
+      background: var(--accent);
+      border-radius: 10px;
+      padding: 16px 14px;
+      margin-top: 13px;
+      font-size: 1.05em;
+      box-shadow: 0 1px 3px #818cf848;
+      transition: background .3s;
     }
     .entry-detail h3 { margin: 0 0 2px 0; font-size: 1.11em; }
-    .entry-detail .label { color: #6b7280; font-size: 0.97em; }
+    .entry-detail .label { color: var(--primary-dark); font-size: 0.97em; }
     .no-entries {
       color: #929292;
       text-align: center;
       padding: 28px 0 18px 0;
       font-size: 1.08em;
+      opacity: .7;
     }
+    html.dark .no-entries { color: #b5b8c5; }
     .editing-row {
       background: #e0eaff !important;
       transition: background 0.2s;
     }
+    html.dark .editing-row {
+      background: #272e5d !important;
+    }
+
+    /* Floating theme toggle button */
+    .theme-toggle {
+      position: fixed;
+      top: 19px;
+      right: 22px;
+      z-index: 999;
+      background: var(--white);
+      color: var(--primary-dark);
+      border: 2px solid var(--primary-dark);
+      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      box-shadow: 0 2px 5px #2225;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .3s, border .3s, color .3s;
+      font-size: 1.35em;
+      user-select: none;
+    }
+    .theme-toggle:active { transform: scale(.93);}
+    .theme-toggle .theme-icon { pointer-events: none;}
+    .theme-toggle[aria-pressed="true"] {
+      background: #292e46;
+      color: #fff799;
+      border-color: #fff799;
+    }
+    html.dark .theme-toggle {
+      background: #23263a;
+      color: #fff799;
+      border-color: #fff799;
+    }
   </style>
 </head>
 <body>
+  <button class="theme-toggle" id="themeToggleBtn" title="Toggle dark/light mode" aria-pressed="false">
+    <span class="theme-icon" id="themeIcon">&#9788;</span>
+  </button>
   <div class="container">
     <div style="text-align:center">
-      <h1>Time Tracker</h1>
-      <div class="lead">Track your time spent on tasks and activities</div>
+      <h1>Hank Margooli's Mystical Magical Time Tracker</h1>
+      <div class="lead">You gotta track it.....track it good!</div>
     </div>
     <div class="card">
       <form id="timeForm" autocomplete="off">
@@ -267,6 +362,24 @@
     </div>
   </div>
   <script>
+    // Theme mode (dark/light) support
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    function setTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      themeToggleBtn.setAttribute("aria-pressed", dark ? "true" : "false");
+      themeIcon.innerHTML = dark ? "&#9790;" : "&#9788;";
+      localStorage.setItem('timetracker_theme', dark ? "dark" : "light");
+    }
+    function getThemePref() {
+      return localStorage.getItem('timetracker_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light");
+    }
+    themeToggleBtn.addEventListener('click', function() {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(!isDark);
+    });
+    setTheme(getThemePref() === "dark");
+
     // LocalStorage key
     const LOCAL_STORAGE_KEY = 'timetracker_entries';
 
