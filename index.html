@@ -75,6 +75,9 @@
       resize: vertical;
       font-size: 1rem;
     }
+    .large-textarea {
+      min-height: 80px;
+    }
     .form-row {
       display: flex;
       gap: 24px;
@@ -195,9 +198,9 @@
             <input type="text" id="task" name="task" placeholder="Task name">
             <div class="error" id="error-task"></div>
           </div>
-          <div class="form-col">
+          <div class="form-col" style="flex:2;">
             <label for="description">Description/Objective *</label>
-            <input type="text" id="description" name="description" placeholder="Describe the task/objective">
+            <textarea id="description" name="description" placeholder="Describe the task/objective" class="large-textarea"></textarea>
             <div class="error" id="error-description"></div>
           </div>
         </div>
@@ -243,6 +246,13 @@
       })[c]);
     }
 
+    // Converts YYYY-MM-DD to MM/DD/YYYY for Excel
+    function excelFriendlyDate(dateStr) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-');
+      return `${m}/${d}/${y}`;
+    }
+
     // Validation
     function validateForm(formData) {
       let errors = {};
@@ -285,7 +295,7 @@
 
         return `
           <tr>
-            <td>${new Date(entry.date).toLocaleDateString()}</td>
+            <td>${excelFriendlyDate(entry.date)}</td>
             <td>${escapeHTML(entry.task)}</td>
             <td>${escapeHTML(entry.description)}</td>
             <td>${entry.startTime} - ${entry.endTime}</td>
@@ -328,7 +338,7 @@
       detailContent.innerHTML = `
         <div class="entry-detail">
           <h3>${escapeHTML(entry.task)}</h3>
-          <div class="label">${new Date(entry.date).toLocaleDateString()}</div>
+          <div class="label">${excelFriendlyDate(entry.date)}</div>
           <div><span class="label">Start:</span> ${entry.startTime} &nbsp; <span class="label">End:</span> ${entry.endTime}</div>
           <div style="margin:7px 0 0 0;"><span class="label">Description:</span> ${escapeHTML(entry.description)}</div>
           ${entry.notes ? `<div style="margin:4px 0 0 0;"><span class="label">Notes:</span> ${escapeHTML(entry.notes)}</div>` : ""}
@@ -366,7 +376,7 @@
       if (entries.length === 0) return;
       let csvContent = "Date,Start Time,End Time,Task,Description,Notes\n";
       entries.forEach(entry => {
-        csvContent += `"${entry.date}","${entry.startTime}","${entry.endTime}","${(entry.task||'').replace(/"/g,'""')}","${(entry.description||'').replace(/"/g,'""')}","${(entry.notes||'').replace(/"/g,'""')}"\n`;
+        csvContent += `"${excelFriendlyDate(entry.date)}","${entry.startTime}","${entry.endTime}","${(entry.task||'').replace(/"/g,'""')}","${(entry.description||'').replace(/"/g,'""')}","${(entry.notes||'').replace(/"/g,'""')}"\n`;
       });
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
